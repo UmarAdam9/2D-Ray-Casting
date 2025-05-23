@@ -6,6 +6,7 @@ An interactive application written in JavaScript to demonstate Ray Casting/Shado
 
 
 ##Controls##
+
 0.Press enter to toggle the light on/off.
 
 1.Press mouse button to create a new polygon.
