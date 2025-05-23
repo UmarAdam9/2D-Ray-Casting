@@ -7,7 +7,11 @@ An interactive application written in JavaScript to demonstate Ray Casting/Shado
 
 ##Controls##
 0.Press enter to toggle the light on/off.
+
 1.Press mouse button to create a new polygon.
+
 2.edit vertices by hovering the mouse over the vertex that you want to edit and click and drag the mouse button.
+
 3.insert a new vertex in a polygon by hovering mouse on the edge that you want to insert vertex in and clicking the mouse button.
+
 4.press Z key to undo the the last polygon that was created.
