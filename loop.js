@@ -50,9 +50,42 @@ function point_line_checker(lineStart , lineEnd, pointPos)  //https://www.jeffre
 let polygon_arr =[];
 
 //starting vertices polygon
-let vertex_arr = [new Vertex(new Vec2d(74,62))   , new Vertex(new Vec2d(1814,71))  , new Vertex(new Vec2d(1829,851)) , new Vertex(new Vec2d(75,847)) ];
+let vertex_arr = [new Vertex(new Vec2d(74,62))   , new Vertex(new Vec2d(1814,71))  , new Vertex(new Vec2d(1829,851)) , new Vertex(new Vec2d(75,847)) ]; //the boundary
+let vertex_arr2 = [new Vertex(new Vec2d(450,251)) , new Vertex(new Vec2d(400,351)) , new Vertex(new Vec2d(500,351))  ]; //add triangle
 
 polygon_arr.push(vertex_arr);
+polygon_arr.push(vertex_arr2);
+
+
+
+let enable_rays = false;
+
+//eventlistener to toggle enable_rays
+document.addEventListener('keypress', (e) => {
+  
+      if (e.key === 'Enter') 
+        enable_rays = !enable_rays;
+});
+
+
+let closestHit = Number.MAX_VALUE;
+let closestPoint = null;
+
+let intersection_arr =[];
+
+ 
+
+
+//eventlistener to delete the most recent shape in the array
+document.addEventListener('keypress', (e) => {
+  
+      if (e.key === 'z') 
+        polygon_arr.pop();
+});
+
+
+
+
 
 //=========== Dragging Vertex with mouse Logic (to be reused in the future )===========================================================//
 let mousePoint = new Vec2d(0,0);
@@ -136,6 +169,9 @@ canvas.addEventListener("mouseup", () => {
 
 
 
+
+
+
 function Loop(){
 
     animationID = requestAnimationFrame(Loop);
@@ -155,28 +191,168 @@ function Loop(){
        
         //clear screen
             ctx.beginPath();
-            ctx.fillStyle = "#e6e6e6";
+            ctx.fillStyle = "black";
             ctx.fillRect(0,0,canvas.width ,canvas.height);
+
+
+
+            
+       
                   
 
        
             
-        //draw them vertex
-          for(let j =0 ; j<polygon_arr.length;j++){
-            for(let i=0; i<polygon_arr[j].length;i++)
-              {
-                FillCircle(polygon_arr[j][i].position,1,"red");
-                DrawCircle(polygon_arr[j][i].position,polygon_arr[j][i].radius,point_checker_circle(mousePoint,polygon_arr[j][i].position,polygon_arr[j][i].radius)?"yellow":"red");
-                point_line_checker(polygon_arr[j][i].position, polygon_arr[j][(i+1)%polygon_arr[j].length].position, mousePoint)? DrawLine(polygon_arr[j][i].position,polygon_arr[j][(i+1)%polygon_arr[j].length].position,"red") 
-                 : DrawLine(polygon_arr[j][i].position,polygon_arr[j][(i+1)%polygon_arr[j].length].position,"black") ;
-              }
+    
+
+
+            
+
+        //for every vertex
+          //draw a line to the vertex
+          //check if this line intersects with any another line in the scene
+            //if yes then add the intersection point to the array
+            //else add the vertex itself to the array
+            //finally draw line from mousepoint to the vertices in the array
+
+
+
+
+            //Aukayyy so its working
+            if(enable_rays){
+              
+
+              //populate the intersection array
+              for(let j =0 ; j<polygon_arr.length;j++){
+                for(let i=0; i<polygon_arr[j].length;i++)
+                  {
+                        //mousePoint
+                        //polygon_arr[j][i].position
+
+                      //for every line in the scene (so essentially 2 more for loops lol) do 3 tests
+
+                      let BaseVertex = new Vec2d(polygon_arr[j][i].position.x , polygon_arr[j][i].position.y);
+                      let Baseangle = Math.atan2(BaseVertex.y - mousePoint.y, BaseVertex.x - mousePoint.x);
+                      
+                      let vertexA = null;
+                      let Angle_A=null;
+
+                      for(let x=0; x<3 ;x++)
+                      {
+                        if(x == 0)
+                          Angle_A = Baseangle;
+
+                        if(x == 1)
+                          Angle_A = Baseangle + 0.01;
+
+                        if(x == 2)
+                          Angle_A = Baseangle - 0.01;
+
+
+                           vertexA = new Vec2d(Math.cos(Angle_A) , Math.sin(Angle_A));
+                           vertexA = vec_normalise(vertexA);
+                           vertexA = vec_multiply(vertexA,10000);
+                           vertexA = vec_add(mousePoint,vertexA);
+                          for(let k =0 ; k<polygon_arr.length;k++)
+                            {
+                              for(let m=0 ; m<polygon_arr[k].length;m++)
+                              {
+
+                                //get the next vertex 
+                                let p1 = polygon_arr[k][m].position;
+                                let p2 = polygon_arr[k][(m+1) % polygon_arr[k].length].position;
+                                
+
+                                let intersection = Line_Intersection_finite(mousePoint,vec_sub(vertexA,mousePoint) ,p1,vec_sub(p2,p1));
+                                if(intersection)
+                                  {
+                            
+                                    //check if its the closest intersection
+                                      if(vec_mag(vec_sub(intersection,mousePoint)) < closestHit)
+                                      {
+                                        closestHit = vec_mag(vec_sub(intersection,mousePoint));
+                                        closestPoint = new Vec2d(intersection.x,intersection.y);
+                                      }
+                                        
+                                    
+                                  }
+                              }
+                          }
+                          if (closestPoint)
+                          intersection_arr.push(closestPoint);
+                        
+
+                          closestHit = Number.MAX_VALUE;
+                          closestPoint = null;
+                        
+                      }
+
+                }
             }
-          
-      console.log(polygon_arr);
-      
+
+
+
+             //Draw lines to the points in the array
+             if(intersection_arr.length)
+             {
+
+             //sort the array of intersection points based on the angle it makes together with the mousepoint
+             intersection_arr.sort((a,b)=>{
+                 const angleA = Math.atan2(a.y - mousePoint.y, a.x - mousePoint.x);
+                // Calculate the angle for point 'b'
+                const angleB = Math.atan2(b.y - mousePoint.y, b.x - mousePoint.x);
+                // Compare the angles
+                return angleA - angleB;
+             })
+
+
+
+
+                for(let i=0; i< intersection_arr.length;i++)
+                {
+
+                  FillTriangle(mousePoint,intersection_arr[i] , intersection_arr[(i+1)%intersection_arr.length] , "yellow ","yellow");
+                 
+                }
+             }
+
+    
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //draw them vertex
+              for(let j =0 ; j<polygon_arr.length;j++){
+                for(let i=0; i<polygon_arr[j].length;i++)
+                  {
+                    FillCircle(polygon_arr[j][i].position,1,"red");
+                    DrawCircle(polygon_arr[j][i].position,polygon_arr[j][i].radius,point_checker_circle(mousePoint,polygon_arr[j][i].position,polygon_arr[j][i].radius)?"yellow":"red");
+                    point_line_checker(polygon_arr[j][i].position, polygon_arr[j][(i+1)%polygon_arr[j].length].position, mousePoint)? DrawLine(polygon_arr[j][i].position,polygon_arr[j][(i+1)%polygon_arr[j].length].position,"red") 
+                    : DrawLine(polygon_arr[j][i].position,polygon_arr[j][(i+1)%polygon_arr[j].length].position,"white") ;
+                  }
+                }
+
+
                 
-               
-               
+                
+              //clear the intersection arr every frame
+               intersection_arr.length=0;
+
+
+                console.log(polygon_arr);
+                
+
 
     }
 
